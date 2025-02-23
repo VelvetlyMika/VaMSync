@@ -201,7 +201,9 @@ namespace VaMLaunchPlugin.MotionSources
                 return false;
             }
 
-            GenerateMotionPointsFromPattern(_targetAnimationPattern, ref _motionPoints, out var minPos, out var maxPos);
+            float minPos;
+            float maxPos;
+            GenerateMotionPointsFromPattern(_targetAnimationPattern, ref _motionPoints, out minPos, out maxPos);
 
             if (_includeMidPoints.val && _pluginFreeController.selected &&
                 SuperController.singleton.editModeToggle.isOn)
@@ -222,7 +224,9 @@ namespace VaMLaunchPlugin.MotionSources
                 }
             }
 
-            if (GetMotionPointIndices(_patternTime.val, _motionPoints, out var p0, out var p1))
+            int p0;
+            int p1;
+            if (GetMotionPointIndices(_patternTime.val, _motionPoints, out p0, out p1))
             {
                 if (p0 != _lastPointIndex)
                 {
