@@ -7,8 +7,8 @@
     <ProjectGuid>{9CB01EB1-928B-44A8-900C-5314E6489162}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VAMLaunch</RootNamespace>
-    <AssemblyName>VAMLaunch</AssemblyName>
+    <RootNamespace>VAMLaunchPlugin</RootNamespace>
+    <AssemblyName>VAMLaunchPlugin</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -96,7 +96,7 @@
     <Compile Include="src\MotionSources\PatternSource.cs" />
     <Compile Include="src\MotionSources\ZoneSource.cs" />
     <Compile Include="src\VAMLaunch.cs" />
-    <Compile Include="src\VAMLaunchNetwork.cs" />
+    <Compile Include="src\VaMLaunchNetwork.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ADD_ME.cslist" />

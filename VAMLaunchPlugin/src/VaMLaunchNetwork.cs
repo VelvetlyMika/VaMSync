@@ -4,9 +4,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 
-namespace VAMLaunchPlugin
+namespace VaMLaunchPlugin
 {
-    public class VAMLaunchNetwork
+    public class VaMLaunchNetwork
     {
         private UdpClient _udpClient;
         private Thread _recvThread;
@@ -17,7 +17,7 @@ namespace VAMLaunchPlugin
         private readonly Queue<byte[]> _recvQueue = new Queue<byte[]>();
         public int QueuedMsgCount => _recvQueue.Count;
 
-        ~VAMLaunchNetwork()
+        ~VaMLaunchNetwork()
         {
             Stop();
         }
@@ -46,8 +46,10 @@ namespace VAMLaunchPlugin
                 return false;
             }
             
-            _recvThread = new Thread(Receive);
-            _recvThread.IsBackground = true;
+            _recvThread = new Thread(Receive)
+            {
+                IsBackground = true
+            };
             _listening = true;
             _recvThread.Start();
 

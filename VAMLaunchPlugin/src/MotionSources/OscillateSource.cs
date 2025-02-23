@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VAMLaunchPlugin.MotionSources
+namespace VaMLaunchPlugin.MotionSources
 {
     public class OscillateSource : IMotionSource
     {
-        private const float LAUNCH_DIR_CHANGE_DELAY = 0.02f;
+        private const float LaunchDirChangeDelay = 0.02f;
         
         private JSONStorableFloat _minPosition;
         private JSONStorableFloat _maxPosition;
@@ -26,7 +26,7 @@ namespace VAMLaunchPlugin.MotionSources
         
         private LineDrawer _lineDrawer0;
         
-        public void OnInit(VAMLaunch plugin)
+        public void OnInit(VaMLaunch plugin)
         {
             _pluginFreeController = plugin.containingAtom.GetStorableByID("control") as FreeControllerV3;
             
@@ -37,7 +37,7 @@ namespace VAMLaunchPlugin.MotionSources
             _dirChangeTimer = 0.0f;
         }
 
-        public void OnInitStorables(VAMLaunch plugin)
+        public void OnInitPluginSettings(VaMLaunch plugin)
         {
             _minPosition = new JSONStorableFloat("oscSourceMinPosition", 10.0f, 0.0f, 99.0f);
             plugin.RegisterFloat(_minPosition);
@@ -61,19 +61,16 @@ namespace VAMLaunchPlugin.MotionSources
                     }
 
                     var atom = SuperController.singleton.GetAtomByUid(name);
-                    if (atom && atom.animationPatterns.Length > 0)
-                    {
-                        _animationAtomController = atom.freeControllers[0];
-                        _targetAnimationPattern = atom.animationPatterns[0];
-                    }
+                    if (!atom || atom.animationPatterns.Length <= 0) return;
+                    _animationAtomController = atom.freeControllers[0];
+                    _targetAnimationPattern = atom.animationPatterns[0];
                 });
             plugin.RegisterStringChooser(_targetAnimationAtomChooser);
         }
         
         private List<string> GetTargetAnimationAtomChoices()
         {
-            List<string> result = new List<string>();
-            result.Add("None");
+            var result = new List<string> { "None" };
             foreach (var uid in SuperController.singleton.GetAtomUIDs())
             {
                 var atom = SuperController.singleton.GetAtomByUid(uid);
@@ -86,7 +83,7 @@ namespace VAMLaunchPlugin.MotionSources
             return result;
         }
 
-        private void InitOptionsUI(VAMLaunch plugin)
+        private void InitOptionsUI(VaMLaunch plugin)
         {
             var slider = plugin.CreateSlider(_minPosition, true);
             slider.label = "Min Position";
@@ -115,7 +112,7 @@ namespace VAMLaunchPlugin.MotionSources
                 _targetAnimationAtomChooser.choices = GetTargetAnimationAtomChoices();
             };
             
-            slider = plugin.CreateSlider(_animationOffset, false);
+            slider = plugin.CreateSlider(_animationOffset);
             slider.label = "Animation Offset";
             slider.slider.onValueChanged.AddListener((v) =>
             {
@@ -123,7 +120,7 @@ namespace VAMLaunchPlugin.MotionSources
             });
         }
 
-        private void DestroyOptionsUI(VAMLaunch plugin)
+        private void DestroyOptionsUI(VaMLaunch plugin)
         {
             plugin.RemoveSlider(_minPosition);
             plugin.RemoveSlider(_maxPosition);
@@ -140,21 +137,18 @@ namespace VAMLaunchPlugin.MotionSources
         public bool OnUpdate(ref byte outPos, ref byte outSpeed)
         {
             _dirChangeTimer -= Time.deltaTime;
-            if (_dirChangeTimer <= 0.0f)
-            {
-                _moveUpwards = !_moveUpwards;
+            if (!(_dirChangeTimer <= 0.0f)) return false;
+            
+            _moveUpwards = !_moveUpwards;
                 
-                float dist = _maxPosition.val - _minPosition.val;
-                _dirChangeDuration = LaunchUtils.PredictMoveDuration(dist, _speed.val) + LAUNCH_DIR_CHANGE_DELAY;
-                _dirChangeTimer = _dirChangeDuration - Mathf.Min(_dirChangeDuration, -_dirChangeTimer);
+            var dist = _maxPosition.val - _minPosition.val;
+            _dirChangeDuration = LaunchUtils.PredictMoveDuration(dist, _speed.val) + LaunchDirChangeDelay;
+            _dirChangeTimer = _dirChangeDuration - Mathf.Min(_dirChangeDuration, -_dirChangeTimer);
                 
-                outPos = _moveUpwards ? (byte)_maxPosition.val :  (byte)_minPosition.val;
-                outSpeed = (byte) _speed.val;
+            outPos = _moveUpwards ? (byte)_maxPosition.val :  (byte)_minPosition.val;
+            outSpeed = (byte) _speed.val;
 
-                return true;
-            }
-
-            return false;
+            return true;
         }
         
         public void OnSimulatorUpdate(float prevPos, float newPos, float deltaTime)
@@ -178,25 +172,16 @@ namespace VAMLaunchPlugin.MotionSources
             
             var currentTime = _targetAnimationPattern.GetFloatJSONParam("currentTime");
             
-            float totalTime = _targetAnimationPattern.GetTotalTime();
+            var totalTime = _targetAnimationPattern.GetTotalTime();
             
-            float normOldTime = currentTime.val / totalTime;
+            var normOldTime = currentTime.val / totalTime;
 
-            float normalizedLaunchPos = Mathf.InverseLerp(_minPosition.val, _maxPosition.val, newPos);
+            var normalizedLaunchPos = Mathf.InverseLerp(_minPosition.val, _maxPosition.val, newPos);
 
-            float newTime;
-            if (_moveUpwards)
-            {
-                newTime = Mathf.Lerp(0.0f, totalTime * 0.5f, normalizedLaunchPos);
-            }
-            else
-            {
-                newTime = Mathf.Lerp(totalTime, totalTime * 0.5f, normalizedLaunchPos);
-            }
-
+            var newTime = Mathf.Lerp(_moveUpwards ? 0.0f : totalTime, totalTime * 0.5f, normalizedLaunchPos);
             newTime = (newTime + (totalTime * _animationOffset.val)) % totalTime;
 
-            float normNewTime = newTime / totalTime;
+            var normNewTime = newTime / totalTime;
             
             if (Mathf.Abs(normNewTime - normOldTime) > 0.05f)
             {
@@ -206,7 +191,7 @@ namespace VAMLaunchPlugin.MotionSources
             
         }
 
-        public void OnDestroy(VAMLaunch plugin)
+        public void OnDestroy(VaMLaunch plugin)
         {
             DestroyOptionsUI(plugin);
         }

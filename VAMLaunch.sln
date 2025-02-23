@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VAMLaunch", "VAMLaunch\VAMLaunch.csproj", "{9CB01EB1-928B-44A8-900C-5314E6489162}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VAMLaunchPlugin", "VAMLaunchPlugin\VAMLaunchPlugin.csproj", "{9CB01EB1-928B-44A8-900C-5314E6489162}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

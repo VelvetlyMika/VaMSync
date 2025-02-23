@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VAMLaunchPlugin.MotionSources
+namespace VaMLaunchPlugin.MotionSources
 {
     public class PatternSource : IMotionSource
     {
@@ -11,7 +11,7 @@ namespace VAMLaunchPlugin.MotionSources
             public Vector3 Position;
         }
         
-        private const int MOTION_POINTS_INITIAL_CAPACITY = 20;
+        private const int MotionPointsInitialCapacity = 20;
         
         private JSONStorableFloat _minPosition;
         private JSONStorableFloat _maxPosition;
@@ -32,13 +32,13 @@ namespace VAMLaunchPlugin.MotionSources
         
         private AnimationPattern _targetAnimationPattern;
         
-        private List<MotionPoint> _motionPoints = new List<MotionPoint>(MOTION_POINTS_INITIAL_CAPACITY);
+        private List<MotionPoint> _motionPoints = new List<MotionPoint>(MotionPointsInitialCapacity);
         private float _lastLaunchPos;
         private int _lastPointIndex;
         
         private LineDrawer _lineDrawer0;
 
-        private List<string> _samplePlaneChoices = new List<string>
+        private readonly List<string> _samplePlaneChoices = new List<string>
         {
             "X",
             "Y",
@@ -47,7 +47,7 @@ namespace VAMLaunchPlugin.MotionSources
 
         private int _samplePlaneIndex;
         
-        public void OnInit(VAMLaunch plugin)
+        public void OnInit(VaMLaunch plugin)
         {
             _pluginFreeController = plugin.containingAtom.GetStorableByID("control") as FreeControllerV3;
             
@@ -55,7 +55,7 @@ namespace VAMLaunchPlugin.MotionSources
             InitEditorGizmos();
         }
 
-        public void OnInitStorables(VAMLaunch plugin)
+        public void OnInitPluginSettings(VaMLaunch plugin)
         {
             _minPosition = new JSONStorableFloat("patternSourceMinPosition", 10.0f, 0.0f, 99.0f);
             plugin.RegisterFloat(_minPosition);
@@ -75,26 +75,22 @@ namespace VAMLaunchPlugin.MotionSources
                     }
                     
                     var atom = SuperController.singleton.GetAtomByUid(name);
-                    if (atom && atom.animationPatterns.Length > 0)
-                    {
-                        _animationAtomController = atom.freeControllers[0];
-                        _targetAnimationPattern = atom.animationPatterns[0];
-                        _patternTime = _targetAnimationPattern.GetFloatJSONParam("currentTime");
-                        _patternSpeed = _targetAnimationPattern.GetFloatJSONParam("speed");
-                    }
+                    if (!atom || atom.animationPatterns.Length <= 0) return;
+                    _animationAtomController = atom.freeControllers[0];
+                    _targetAnimationPattern = atom.animationPatterns[0];
+                    _patternTime = _targetAnimationPattern.GetFloatJSONParam("currentTime");
+                    _patternSpeed = _targetAnimationPattern.GetFloatJSONParam("speed");
                 });
             plugin.RegisterStringChooser(_targetAnimationAtomChooser);
 
             _samplePlaneChooser = new JSONStorableStringChooser("patternSourceSamplePlane", _samplePlaneChoices, "",
                 "Sample Plane", (name) =>
                 {
-                    for (int i = 0; i < _samplePlaneChoices.Count; i++)
+                    for (var i = 0; i < _samplePlaneChoices.Count; i++)
                     {
-                        if (_samplePlaneChoices[i] == name)
-                        {
-                            _samplePlaneIndex = i;
-                            break;
-                        }
+                        if (_samplePlaneChoices[i] != name) continue;
+                        _samplePlaneIndex = i;
+                        break;
                     }
                 });
             plugin.RegisterStringChooser(_samplePlaneChooser);
@@ -113,8 +109,7 @@ namespace VAMLaunchPlugin.MotionSources
         
         private List<string> GetTargetAnimationAtomChoices()
         {
-            List<string> result = new List<string>();
-            result.Add("None");
+            var result = new List<string> { "None" };
             foreach (var uid in SuperController.singleton.GetAtomUIDs())
             {
                 var atom = SuperController.singleton.GetAtomByUid(uid);
@@ -127,7 +122,7 @@ namespace VAMLaunchPlugin.MotionSources
             return result;
         }
 
-        private void InitOptionsUI(VAMLaunch plugin)
+        private void InitOptionsUI(VaMLaunch plugin)
         {
             var slider = plugin.CreateSlider(_minPosition, true);
             slider.label = "Min Position";
@@ -167,7 +162,7 @@ namespace VAMLaunchPlugin.MotionSources
             
         }
 
-        private void DestroyOptionsUI(VAMLaunch plugin)
+        private void DestroyOptionsUI(VaMLaunch plugin)
         {
             plugin.RemoveSlider(_minPosition);
             plugin.RemoveSlider(_maxPosition);
@@ -206,8 +201,7 @@ namespace VAMLaunchPlugin.MotionSources
                 return false;
             }
 
-            float minPos, maxPos;
-            GenerateMotionPointsFromPattern(_targetAnimationPattern, ref _motionPoints, out minPos, out maxPos);
+            GenerateMotionPointsFromPattern(_targetAnimationPattern, ref _motionPoints, out var minPos, out var maxPos);
 
             if (_includeMidPoints.val && _pluginFreeController.selected &&
                 SuperController.singleton.editModeToggle.isOn)
@@ -228,8 +222,7 @@ namespace VAMLaunchPlugin.MotionSources
                 }
             }
 
-            int p0, p1;
-            if (GetMotionPointIndices(_patternTime.val, _motionPoints, out p0, out p1))
+            if (GetMotionPointIndices(_patternTime.val, _motionPoints, out var p0, out var p1))
             {
                 if (p0 != _lastPointIndex)
                 {
@@ -248,10 +241,10 @@ namespace VAMLaunchPlugin.MotionSources
 
                     timeToNextPoint /= Mathf.Max(_patternSpeed.val, 0.001f);
 
-                    float launchFactor = _invertPosition.val ? 1.0f - yFactor : yFactor;
+                    var launchFactor = _invertPosition.val ? 1.0f - yFactor : yFactor;
                     
-                    float launchPos = Mathf.Lerp(_minPosition.val, _maxPosition.val, launchFactor);
-                    float launchSpeed = LaunchUtils.PredictMoveSpeed(_lastLaunchPos, launchPos, timeToNextPoint);
+                    var launchPos = Mathf.Lerp(_minPosition.val, _maxPosition.val, launchFactor);
+                    var launchSpeed = LaunchUtils.PredictMoveSpeed(_lastLaunchPos, launchPos, timeToNextPoint);
                     
                     outPos = (byte) launchPos;
                     outSpeed = (byte) launchSpeed;
@@ -268,32 +261,29 @@ namespace VAMLaunchPlugin.MotionSources
 
         private float GetMaxPosition(float currentMax, Vector3 pos)
         {
-            float val = GetPositionForPlane(pos);
+            var val = GetPositionForPlane(pos);
             return val > currentMax ? val : currentMax;
         }
         
         private float GetMinPosition(float currentMin, Vector3 pos)
         {
-            float val = GetPositionForPlane(pos);
+            var val = GetPositionForPlane(pos);
             return val < currentMin ? val : currentMin;
         }
 
-        public float GetPositionForPlane(Vector3 pos)
+        private float GetPositionForPlane(Vector3 pos)
         {
-            if (_samplePlaneIndex == 0)
+            switch (_samplePlaneIndex)
             {
-                return pos.x;
+                case 0:
+                    return pos.x;
+                case 1:
+                    return pos.y;
+                case 2:
+                    return pos.z;
+                default:
+                    return 0.0f;
             }
-            if (_samplePlaneIndex == 1)
-            {
-                return pos.y;
-            }
-            if (_samplePlaneIndex == 2)
-            {
-                return pos.z;
-            }
-
-            return 0.0f;
         }
 
         private void GenerateMotionPointsFromPattern(AnimationPattern pattern, ref List<MotionPoint> points,
@@ -303,7 +293,7 @@ namespace VAMLaunchPlugin.MotionSources
             outMaxY = float.MinValue;
 
             points.Clear();
-            for (int i = 0; i < pattern.steps.Length; i++)
+            for (var i = 0; i < pattern.steps.Length; i++)
             {
                 MotionPoint point;
 
@@ -320,26 +310,24 @@ namespace VAMLaunchPlugin.MotionSources
                 outMaxY = GetMaxPosition(outMaxY, point.Position);
                 outMinY = GetMinPosition(outMinY, point.Position);
 
-                if (_includeMidPoints.val)
+                if (!_includeMidPoints.val) continue;
+                point.Time = pattern.steps[i].timeStep +
+                             pattern.steps[(i + 1) % pattern.steps.Length].transitionToTime * 0.5f;
+                point.Position = pattern.GetPositionFromPoint(i, 0.5f);
+
+                if (_useLocalSpace.val)
                 {
-                    point.Time = pattern.steps[i].timeStep +
-                                 pattern.steps[(i + 1) % pattern.steps.Length].transitionToTime * 0.5f;
-                    point.Position = pattern.GetPositionFromPoint(i, 0.5f);
-
-                    if (_useLocalSpace.val)
-                    {
-                        point.Position = pattern.transform.InverseTransformPoint(point.Position);
-                    }
-
-                    points.Add(point);
-
-                    outMaxY = GetMaxPosition(outMaxY, point.Position);
-                    outMinY = GetMinPosition(outMinY, point.Position);
+                    point.Position = pattern.transform.InverseTransformPoint(point.Position);
                 }
+
+                points.Add(point);
+
+                outMaxY = GetMaxPosition(outMaxY, point.Position);
+                outMinY = GetMinPosition(outMinY, point.Position);
             }
         }
 
-        private bool GetMotionPointIndices(float time, List<MotionPoint> points, out int p0, out int p1)
+        private static bool GetMotionPointIndices(float time, List<MotionPoint> points, out int p0, out int p1)
         {
             if (points.Count <= 1)
             {
@@ -348,20 +336,18 @@ namespace VAMLaunchPlugin.MotionSources
                 return false;
             }
 
-            for (int i = 0; i < points.Count; i++)
+            for (var i = 0; i < points.Count; i++)
             {
                 if (time < points[i].Time)
                 {
                     continue;
                 }
                 
-                int nextPoint = (i + 1) % points.Count;
-                if (nextPoint == 0 || time < points[nextPoint].Time)
-                {
-                    p0 = i;
-                    p1 = nextPoint;
-                    return true;
-                }
+                var nextPoint = (i + 1) % points.Count;
+                if (nextPoint != 0 && !(time < points[nextPoint].Time)) continue;
+                p0 = i;
+                p1 = nextPoint;
+                return true;
             }
 
             p0 = -1;
@@ -374,7 +360,7 @@ namespace VAMLaunchPlugin.MotionSources
             
         }
 
-        public void OnDestroy(VAMLaunch plugin)
+        public void OnDestroy(VaMLaunch plugin)
         {
             DestroyOptionsUI(plugin);
         }

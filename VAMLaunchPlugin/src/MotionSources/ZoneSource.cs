@@ -2,14 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VAMLaunchPlugin.MotionSources
+namespace VaMLaunchPlugin.MotionSources
 {
     public class ZoneSource : IMotionSource
     {
-        public const int VELOCITY_BUFFER_CAPACITY = 20;
-        public const int AVG_VELOCITY_BUFFER_CAPACITY = 100;
+        private const int VelocityBufferCapacity = 20;
+        private const int AvgVelocityBufferCapacity = 100;
         
-        private const float ZONE_MESH_SCALAR = 20.0f;
+        private const float ZoneMeshScalar = 20.0f;
         
         private JSONStorableFloat _currentTargetPos;
         private JSONStorableFloat _positionSampleRate;
@@ -44,15 +44,15 @@ namespace VAMLaunchPlugin.MotionSources
         private Matrix4x4 _zoneRenderMatrix;
         private Matrix4x4 _zoneInvMatrix;
 
-        private Queue<float> _upwardsVelocityBuffer = new Queue<float>(VELOCITY_BUFFER_CAPACITY);
-        private Queue<float> _downwardsVelocityBuffer = new Queue<float>(VELOCITY_BUFFER_CAPACITY);
-        private List<float> _velocityHistory = new List<float>(AVG_VELOCITY_BUFFER_CAPACITY);
+        private readonly Queue<float> _upwardsVelocityBuffer = new Queue<float>(VelocityBufferCapacity);
+        private readonly Queue<float> _downwardsVelocityBuffer = new Queue<float>(VelocityBufferCapacity);
+        private readonly List<float> _velocityHistory = new List<float>(AvgVelocityBufferCapacity);
 
         private LineDrawer _lineDrawer0, _lineDrawer1;
         private Material _zoneMaterial;
         private Material _targetPosMaterial;
         
-        public void OnInit(VAMLaunch plugin)
+        public void OnInit(VaMLaunch plugin)
         {
             _pluginFreeController = plugin.containingAtom.GetStorableByID("control") as FreeControllerV3;
             
@@ -106,21 +106,21 @@ namespace VAMLaunchPlugin.MotionSources
             }
 
             // Convert Y range from -1.0, 1.0 to 0.0f, 99.0f
-            float posFactor = Mathf.InverseLerp(-1.0f, 1.0f, localZonePos.y);
+            var posFactor = Mathf.InverseLerp(-1.0f, 1.0f, localZonePos.y);
             _currentTargetPos.SetVal(Mathf.Lerp(0, LaunchUtils.LAUNCH_MAX_VAL, posFactor));
 
             // Calculate required launch move speed in order to reach new position
-            float speed = LaunchUtils.PredictMoveSpeed(_lastLaunchPos, _currentTargetPos.val, Time.deltaTime);
+            var speed = LaunchUtils.PredictMoveSpeed(_lastLaunchPos, _currentTargetPos.val, Time.deltaTime);
 
             // We store this speed into our velocity buffer to help with generating a rolling average speed.
-            if (_velocityHistory.Count == AVG_VELOCITY_BUFFER_CAPACITY)
+            if (_velocityHistory.Count == AvgVelocityBufferCapacity)
             {
                 _velocityHistory.RemoveAt(0);
             }
             _velocityHistory.Add(speed);
             
-            float delta = _currentTargetPos.val - _lastLaunchPos;
-            int deltaSign = delta > 0.0f ? 1 : -1;
+            var delta = _currentTargetPos.val - _lastLaunchPos;
+            var deltaSign = delta > 0.0f ? 1 : -1;
             
             // We apply the users desired speed multiplier (After we store the original in for the rolling average to
             // prevent throwing off all the other parameters that tune the prediction logic)
@@ -130,7 +130,7 @@ namespace VAMLaunchPlugin.MotionSources
             if (deltaSign == 1)
             {
                 // Storing a rolling velocity for upwards motion
-                if (_upwardsVelocityBuffer.Count == VELOCITY_BUFFER_CAPACITY)
+                if (_upwardsVelocityBuffer.Count == VelocityBufferCapacity)
                 {
                     _upwardsVelocityBuffer.Dequeue();
                 }
@@ -146,15 +146,15 @@ namespace VAMLaunchPlugin.MotionSources
                 {
                     // We take the highest speed during this upwards motion as it is most likely the highest speed that
                     // will be the closest representation of the motion.
-                    float highestSpeed = RetrieveHighestSpeed(_upwardsVelocityBuffer);                    
+                    var highestSpeed = RetrieveHighestSpeed(_upwardsVelocityBuffer);                    
                     highestSpeed = Mathf.Round(highestSpeed);
 
                     // Only if the speed is small do we tell the launch to go to exact locations 
                     // (Not happy with this, need to think of a better way to deal with slower motions)
-                    float launchPos = highestSpeed > 1.0f ? LaunchUtils.LAUNCH_MAX_VAL : _currentTargetPos.val;
-                    float launchSpeed = highestSpeed;
+                    var launchPos = highestSpeed > 1.0f ? LaunchUtils.LAUNCH_MAX_VAL : _currentTargetPos.val;
+                    var launchSpeed = highestSpeed;
 
-                    // Tell the Launch to do it's thing!
+                    // Tell the Launch to do its thing!
                     shouldMoveLaunch = true;
                     outPos = (byte)launchPos;
                     outSpeed = (byte) launchSpeed;
@@ -172,9 +172,9 @@ namespace VAMLaunchPlugin.MotionSources
                 _downwardsVelocityBuffer.Clear();
             }
             // This does the same as above except for downwards motion
-            else if (deltaSign == -1)
+            else
             {
-                if (_downwardsVelocityBuffer.Count == VELOCITY_BUFFER_CAPACITY)
+                if (_downwardsVelocityBuffer.Count == VelocityBufferCapacity)
                 {
                     _downwardsVelocityBuffer.Dequeue();
                 }
@@ -186,14 +186,14 @@ namespace VAMLaunchPlugin.MotionSources
                 if (prevTime < _currentLaunchSignalTimeThreshold.val && 
                     _timeMovingDownwards >= _currentLaunchSignalTimeThreshold.val)
                 {
-                    float highestSpeed = RetrieveHighestSpeed(_downwardsVelocityBuffer);
+                    var highestSpeed = RetrieveHighestSpeed(_downwardsVelocityBuffer);
 
                     highestSpeed = Mathf.Round(highestSpeed);
 
-                    float launchPos = highestSpeed > 1.0f ? 0 : _currentTargetPos.val;
-                    float launchSpeed = highestSpeed;
+                    var launchPos = highestSpeed > 1.0f ? 0 : _currentTargetPos.val;
+                    var launchSpeed = highestSpeed;
                     
-                    // Tell the Launch to do it's thing!
+                    // Tell the Launch to do its thing!
                     shouldMoveLaunch = true;
                     outPos = (byte)launchPos;
                     outSpeed = (byte) launchSpeed;
@@ -216,12 +216,12 @@ namespace VAMLaunchPlugin.MotionSources
             return shouldMoveLaunch;
         }
 
-        public void OnDestroy(VAMLaunch plugin)
+        public void OnDestroy(VaMLaunch plugin)
         {
             DestroyOptionsUI(plugin);
         }
 
-        public void OnInitStorables(VAMLaunch plugin)
+        public void OnInitPluginSettings(VaMLaunch plugin)
         {
             _targetZoneWidth = new JSONStorableFloat("zoneSourceTargetZoneWidth", 0.1f, 0.005f, 0.2f);
             _targetZoneHeight = new JSONStorableFloat("zoneSourceTargetZoneHeight", 0.1f, 0.005f, 0.2f);
@@ -298,7 +298,7 @@ namespace VAMLaunchPlugin.MotionSources
             plugin.RegisterStringChooser(_targetControllerChooser);
         }
 
-        private void InitOptionsUI(VAMLaunch plugin)
+        private void InitOptionsUI(VaMLaunch plugin)
         {
             _chooseAtomButton = plugin.CreateButton("Select Zone Target");
             _chooseAtomButton.button.onClick.AddListener(() =>
@@ -392,14 +392,14 @@ namespace VAMLaunchPlugin.MotionSources
             
             _spacer0 = plugin.CreateSpacer();
             
-            slider = plugin.CreateSlider(_currentLaunchSignalTimeThreshold, false);
+            slider = plugin.CreateSlider(_currentLaunchSignalTimeThreshold);
             slider.label = "Adjust Time";
             
-            slider = plugin.CreateSlider(_currentTargetPos, false);
+            slider = plugin.CreateSlider(_currentTargetPos);
             slider.label = "Current Target Position";
         }
 
-        private void DestroyOptionsUI(VAMLaunch plugin)
+        private void DestroyOptionsUI(VaMLaunch plugin)
         {
             plugin.RemoveButton(_chooseAtomButton);
             plugin.RemovePopup(_chooseAtomPopup);
@@ -420,23 +420,21 @@ namespace VAMLaunchPlugin.MotionSources
         
         private IEnumerator InitZoneAtom()
         {
-            const string ZoneAtomName = "LaunchZone";
-            var zoneAtom = SuperController.singleton.GetAtomByUid(ZoneAtomName);
+            const string zoneAtomName = "LaunchZone";
+            var zoneAtom = SuperController.singleton.GetAtomByUid(zoneAtomName);
             if (zoneAtom == null)
             {
-                yield return SuperController.singleton.AddAtomByType("Empty", ZoneAtomName);
-                zoneAtom = SuperController.singleton.GetAtomByUid(ZoneAtomName);
+                yield return SuperController.singleton.AddAtomByType("Empty", zoneAtomName);
+                zoneAtom = SuperController.singleton.GetAtomByUid(zoneAtomName);
             }
-            
-            if (zoneAtom != null)
+
+            if (zoneAtom == null) yield break;
+            var trigger = zoneAtom.GetComponent<CollisionTrigger>();
+            if (trigger != null)
             {
-                var trigger = zoneAtom.GetComponent<CollisionTrigger>();
-                if (trigger != null)
-                {
-                    Object.Destroy(trigger);
-                }
-                _zoneFreeController = zoneAtom.mainController;
+                Object.Destroy(trigger);
             }
+            _zoneFreeController = zoneAtom.mainController;
         }
 
         private void InitEditorGizmos()
@@ -445,28 +443,26 @@ namespace VAMLaunchPlugin.MotionSources
             _lineDrawer1 = new LineDrawer(_pluginFreeController.linkLineMaterial);
             
             _zoneMaterial = new Material(_pluginFreeController.linkLineMaterial);
-            Color zoneColor = Color.magenta;
+            var zoneColor = Color.magenta;
             zoneColor.a = 0.1f;
             _zoneMaterial.SetColor("_Color", zoneColor);
             
             _targetPosMaterial = new Material(_pluginFreeController.linkLineMaterial);
-            Color posColor = Color.green;
+            var posColor = Color.white;
             posColor.a = 0.1f;
             _targetPosMaterial.SetColor("_Color", posColor);
         }
         
         private List<string> GetTargetAtomChoices()
         {
-            List<string> result = new List<string>();
-            result.Add("None");
+            var result = new List<string> { "None" };
             result.AddRange(SuperController.singleton.GetAtomUIDs());
             return result;
         }
         
         private List<string> GetTargetControllerChoices()
         {
-            List<string> result = new List<string>();
-            result.Add("None");
+            var result = new List<string> { "None" };
             if (_targetAtom == null)
             {
                 return result;
@@ -495,7 +491,7 @@ namespace VAMLaunchPlugin.MotionSources
             Quaternion zoneRotation = _zoneFreeController.transform.rotation;
             
             _zoneRenderMatrix = Matrix4x4.TRS(zonePosition, zoneRotation,
-                new Vector3(_targetZoneWidth.val, _targetZoneHeight.val, _targetZoneDepth.val) * ZONE_MESH_SCALAR);
+                new Vector3(_targetZoneWidth.val, _targetZoneHeight.val, _targetZoneDepth.val) * ZoneMeshScalar);
             _zoneInvMatrix = Matrix4x4.TRS(zonePosition, zoneRotation,
                 new Vector3(_targetZoneWidth.val, _targetZoneHeight.val, _targetZoneDepth.val)).inverse;
         }
@@ -518,15 +514,14 @@ namespace VAMLaunchPlugin.MotionSources
                     float relTargetPos = _currentTargetPos.val / (99.0f * 2.0f);
 
                     Vector3 targetPosBoxScale = new Vector3(0.2f,
-                        _targetZoneHeight.val * ZONE_MESH_SCALAR * relTargetPos * 2.0f, 0.2f);
+                        _targetZoneHeight.val * ZoneMeshScalar * relTargetPos * 2.0f, 0.2f);
 
 
                     Matrix4x4 targetPosMatrix = Matrix4x4.TRS(
                         _zoneFreeController.transform.position +
                         _zoneFreeController.transform.rotation * Vector3.right * (_targetZoneWidth.val + 0.01f) +
                         _zoneFreeController.transform.rotation * Vector3.down * _targetZoneHeight.val +
-                        _zoneFreeController.transform.rotation * Vector3.up * _targetZoneHeight.val * relTargetPos *
-                        2.0f,
+                        _zoneFreeController.transform.rotation * Vector3.up * (_targetZoneHeight.val * relTargetPos * 2.0f),
                         _zoneFreeController.transform.rotation,
                         targetPosBoxScale);
                     
@@ -553,9 +548,9 @@ namespace VAMLaunchPlugin.MotionSources
         private float CalculateAverageSpeed()
         {
             var averageVel = 0.0f;
-            for (int i = 0; i < _velocityHistory.Count; i++)
+            foreach (var t in _velocityHistory)
             {
-                averageVel += _velocityHistory[i];
+                averageVel += t;
             }
 
             if (_velocityHistory.Count > 0)
@@ -566,7 +561,7 @@ namespace VAMLaunchPlugin.MotionSources
             return averageVel;
         }
         
-        // The signal threshold is how much time must moving in a single direction before the system will consider it
+        // The signal threshold is how much time must pass in a single direction before the system will consider it
         // a valid motion to tell the launch about.
         private void UpdateSignalThreshold()
         {

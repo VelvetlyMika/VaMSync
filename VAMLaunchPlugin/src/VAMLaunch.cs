@@ -1,20 +1,20 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using VAMLaunchPlugin.MotionSources;
+using VaMLaunchPlugin.MotionSources;
 
-namespace VAMLaunchPlugin
+namespace VaMLaunchPlugin
 {
-    public class VAMLaunch : MVRScript
+    public class VaMLaunch : MVRScript
     {
-        private static VAMLaunch _instance;
+        private static VaMLaunch _instance;
         
-        private const string SERVER_IP = "127.0.0.1";
-        private const int SERVER_LISTEN_PORT = 15600;
-        private const int SERVER_SEND_PORT = 15601;
-        private const float NETWORK_LISTEN_INTERVAL = 0.033f;
+        private const string ServerIP = "127.0.0.1";
+        private const int ServerListenPort = 15600;
+        private const int ServerSendPort = 15601;
+        private const float NetworkListenInterval = 0.033f;
         
-        private VAMLaunchNetwork _network;
+        private VaMLaunchNetwork _network;
         private float _networkPollTimer;
 
         private byte _lastSentLaunchPos;
@@ -30,14 +30,14 @@ namespace VAMLaunchPlugin
         private int _currentMotionSourceIndex = -1;
         private int _desiredMotionSourceIndex;
 
-        private List<string> _motionSourceChoices = new List<string>
+        private readonly List<string> _motionSourceChoices = new List<string>
         {
             "Oscillate",
             "Pattern",
             "Zone"
         };
 
-        private List<IMotionSource> _motionSources = new List<IMotionSource>
+        private readonly List<IMotionSource> _motionSources = new List<IMotionSource>
         {
             new OscillateSource(),
             new PatternSource(),
@@ -60,25 +60,33 @@ namespace VAMLaunchPlugin
 
             _instance = this;
 
-            InitStorables();
+            InitPluginSettings();
             InitOptionsUI();
-            InitActions();
+            InitStorableActions();
             InitNetwork();
         }
 
         private void InitNetwork()
         {
-            _network = new VAMLaunchNetwork();
-            _network.Init(SERVER_IP, SERVER_LISTEN_PORT, SERVER_SEND_PORT);
+            _network = new VaMLaunchNetwork();
+            _network.Init(ServerIP, ServerListenPort, ServerSendPort);
             SuperController.LogMessage("VAM Launch network connection established.");
         }
         
-        private void InitStorables()
+        private void InitPluginSettings()
         {
-            _motionSourceChooser = new JSONStorableStringChooser("motionSource", _motionSourceChoices, "",
+            _motionSourceChooser = new JSONStorableStringChooser(
+                "motionSource",
+                _motionSourceChoices, 
+                "",
                 "Motion Source",
-                (string name) => { _desiredMotionSourceIndex = GetMotionSourceIndex(name); });
-            _motionSourceChooser.choices = _motionSourceChoices;
+                (srcName) => {
+                    _desiredMotionSourceIndex = GetMotionSourceIndex(srcName);
+                }
+            )
+            {
+                choices = _motionSourceChoices
+            };
             RegisterStringChooser(_motionSourceChooser);
             if (string.IsNullOrEmpty(_motionSourceChooser.val))
             {
@@ -93,7 +101,7 @@ namespace VAMLaunchPlugin
 
             foreach (var ms in _motionSources)
             {
-                ms.OnInitStorables(this);
+                ms.OnInitPluginSettings(this);
             }
         }
         
@@ -102,7 +110,7 @@ namespace VAMLaunchPlugin
             var toggle = CreateToggle(_pauseLaunchMessages);
             toggle.label = "Pause Launch";
             
-            var slider = CreateSlider(_simulatorPosition, false);
+            var slider = CreateSlider(_simulatorPosition);
             slider.label = "Simulator";
             
             CreateScrollablePopup(_motionSourceChooser);
@@ -110,7 +118,7 @@ namespace VAMLaunchPlugin
             CreateSpacer();
         }
 
-        private void InitActions()
+        private void InitStorableActions()
         {
             JSONStorableAction startLaunchAction = new JSONStorableAction("startLaunch", () =>
             {
@@ -131,9 +139,9 @@ namespace VAMLaunchPlugin
             RegisterAction(toggleLaunchAction);
         }
 
-        private int GetMotionSourceIndex(string name)
+        private int GetMotionSourceIndex(string srcName)
         {
-            return _motionSourceChoices.IndexOf(name);
+            return _motionSourceChoices.IndexOf(srcName);
         }
         
         private void UpdateMotionSource()
@@ -209,7 +217,7 @@ namespace VAMLaunchPlugin
             _simulatorSpeed = Mathf.Clamp(speed, 0.0f, LaunchUtils.LAUNCH_MAX_VAL);
         }
         
-        // Not really used yet, but there just incase we want to do two way communication between server
+        // Not really used yet, but there just in case we want to do two-way communication between server
         private void UpdateNetwork()
         {
             if (_network == null)
@@ -221,7 +229,7 @@ namespace VAMLaunchPlugin
             if (_networkPollTimer <= 0.0f)
             {
                 ReceiveNetworkMessages();
-                _networkPollTimer = NETWORK_LISTEN_INTERVAL - Mathf.Min(-_networkPollTimer, NETWORK_LISTEN_INTERVAL);
+                _networkPollTimer = NetworkListenInterval - Mathf.Min(-_networkPollTimer, NetworkListenInterval);
             }
         }
 
@@ -235,7 +243,7 @@ namespace VAMLaunchPlugin
         }
 
         
-        private static byte[] _launchData = new byte[6];
+        private static readonly byte[] LaunchData = new byte[6];
         private void SendLaunchPosition(byte pos, byte speed)
         {
             SetSimulatorTarget(pos, speed);
@@ -247,21 +255,21 @@ namespace VAMLaunchPlugin
 
             if (!_pauseLaunchMessages.val)
             {
-                _launchData[0] = pos;
-                _launchData[1] = speed;
+                LaunchData[0] = pos;
+                LaunchData[1] = speed;
 
                 float dist = Mathf.Abs(pos - _lastSentLaunchPos);
                 float duration = LaunchUtils.PredictMoveDuration(dist, speed);
                     
                 var durationData = BitConverter.GetBytes(duration);
-                _launchData[2] = durationData[0];
-                _launchData[3] = durationData[1];
-                _launchData[4] = durationData[2];
-                _launchData[5] = durationData[3];
+                LaunchData[2] = durationData[0];
+                LaunchData[3] = durationData[1];
+                LaunchData[4] = durationData[2];
+                LaunchData[5] = durationData[3];
                 
                 //SuperController.LogMessage(string.Format("Sending: P:{0}, S:{1}, D:{2}", pos, speed, duration));
                 
-                _network.Send(_launchData, _launchData.Length);
+                _network.Send(LaunchData, LaunchData.Length);
 
                 _lastSentLaunchPos = pos;
             }
