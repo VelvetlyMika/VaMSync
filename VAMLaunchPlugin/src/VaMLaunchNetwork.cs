@@ -73,14 +73,14 @@ namespace VaMLaunchPlugin
                 catch (SocketException e)
                 {
                     // 10004 thrown when socket is closed
-                    //if (e.ErrorCode != 10004)
-                    //{
-                        //SuperController.LogMessage("Socket exception while receiving data from udp client: " + e.Message);                        
-                    //}
+                    if (e.ErrorCode != 10004)
+                    {
+                        SuperController.LogMessage("Socket exception while receiving data from udp client: " + e.Message);                        
+                    }
                 }
                 catch (Exception e)
                 {
-                    //SuperController.LogMessage("Error receiving data from udp client: " + e.Message);
+                    SuperController.LogMessage("Error receiving data from udp client: " + e.Message);
                 }
             }
         }
@@ -93,7 +93,7 @@ namespace VaMLaunchPlugin
             }
             catch (Exception e)
             {
-                
+                SuperController.LogMessage("Error sending data to udp client: " + e.Message);
             }
         }
 
