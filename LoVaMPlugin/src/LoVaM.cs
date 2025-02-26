@@ -9,8 +9,8 @@ namespace LoVaMPlugin
     {
         private static LoVaM _instance;
         
-        private const string ServerIP = "127.0.0.1";
-        private const int ServerListenPort = 15600;
+        private const string ServerIP = "192.168.178.73";
+        private const int ServerListenPort = 20010;
         private const float NetworkListenInterval = 0.033f;
         
         private INetwork _network;
@@ -72,6 +72,7 @@ namespace LoVaMPlugin
             _network = new LoVaMNetwork();
             _network.Init(ServerIP, ServerListenPort);
             SuperController.LogMessage("LoVaM connection to Lovense remote established.");
+            _network.Send("");
         }
         
         private void InitPluginSettings()
