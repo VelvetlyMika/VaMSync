@@ -4,7 +4,7 @@
     {
         public bool Init(string ip, int sendPort)
         {
-            throw new System.NotImplementedException();
+            return true;
         }
 
         public void Send<T>(T data)
@@ -14,7 +14,7 @@
 
         public void Stop()
         {
-            throw new System.NotImplementedException();
+            return;
         }
     }
 }

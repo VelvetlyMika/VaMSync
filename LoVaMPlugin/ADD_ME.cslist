@@ -1,6 +1,6 @@
 src/LoVaM.cs
 src/Network/INetwork.cs
-src/Network/LoVaNetwork.cs
+src/Network/LoVaMNetwork.cs
 src/LaunchUtils.cs
 src/MotionSources/IMotionSource.cs
 src/MotionSources/ZoneSource.cs
