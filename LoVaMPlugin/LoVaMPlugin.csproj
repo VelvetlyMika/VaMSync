@@ -97,7 +97,7 @@
     <Compile Include="src\MotionSources\PatternSource.cs" />
     <Compile Include="src\MotionSources\ZoneSource.cs" />
     <Compile Include="src\Network\INetwork.cs" />
-    <Compile Include="src\Network\LoVAMNetwork.cs" />
+    <Compile Include="src\Network\LoVaMNetwork.cs" />
     <Compile Include="src\LoVaM.cs" />
   </ItemGroup>
   <ItemGroup>

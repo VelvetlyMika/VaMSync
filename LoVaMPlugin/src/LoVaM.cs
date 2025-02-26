@@ -196,11 +196,9 @@ namespace LoVaMPlugin
 
         private void StopNetwork()
         {
-            if (_network != null)
-            {
-                SuperController.LogMessage("Shutting down VAM Launch network.");
-                _network.Stop();
-            }
+            if (_network == null) return;
+            SuperController.LogMessage("Shutting down VAM Launch network.");
+            _network.Stop();
         }
 
         private void Update()
