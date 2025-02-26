@@ -1,11 +1,11 @@
-namespace VaMLaunchPlugin.MotionSources
+namespace LoVaMPlugin.MotionSources
 {
     public interface IMotionSource
     {
-        void OnInit(VaMLaunch plugin);
-        void OnInitPluginSettings(VaMLaunch plugin);
+        void OnInit(LoVaM plugin);
+        void OnInitPluginSettings(LoVaM plugin);
         bool OnUpdate(ref byte outPos, ref byte outSpeed);
         void OnSimulatorUpdate(float prevPos, float newPos, float deltaTime);
-        void OnDestroy(VaMLaunch plugin);
+        void OnDestroy(LoVaM plugin);
     }
 }

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace VaMLaunchPlugin
+namespace LoVaMPlugin
 {
     public static class LaunchUtils
     {

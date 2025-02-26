@@ -1,5 +1,7 @@
 src/VAMLaunch.cs
-src/VAMLaunchNetwork.cs
+src/Network/INetwork.cs
+src/Network/VAMLaunchNetwork.cs
+src/Network/LoVAMNetwork.cs
 src/LaunchUtils.cs
 src/MotionSources/IMotionSource.cs
 src/MotionSources/ZoneSource.cs

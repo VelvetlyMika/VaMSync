@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VaMLaunchPlugin.MotionSources
+namespace LoVaMPlugin.MotionSources
 {
     public class ZoneSource : IMotionSource
     {
@@ -52,7 +52,7 @@ namespace VaMLaunchPlugin.MotionSources
         private Material _zoneMaterial;
         private Material _targetPosMaterial;
         
-        public void OnInit(VaMLaunch plugin)
+        public void OnInit(LoVaM plugin)
         {
             _pluginFreeController = plugin.containingAtom.GetStorableByID("control") as FreeControllerV3;
             
@@ -82,7 +82,7 @@ namespace VaMLaunchPlugin.MotionSources
         {
             bool shouldMoveLaunch = false;
             
-            if (_targetAtom == null || _targetController == null)
+            if (!_targetAtom || !_targetController)
             {
                 return false;
             }
@@ -216,12 +216,12 @@ namespace VaMLaunchPlugin.MotionSources
             return shouldMoveLaunch;
         }
 
-        public void OnDestroy(VaMLaunch plugin)
+        public void OnDestroy(LoVaM plugin)
         {
             DestroyOptionsUI(plugin);
         }
 
-        public void OnInitPluginSettings(VaMLaunch plugin)
+        public void OnInitPluginSettings(LoVaM plugin)
         {
             _targetZoneWidth = new JSONStorableFloat("zoneSourceTargetZoneWidth", 0.1f, 0.005f, 0.2f);
             _targetZoneHeight = new JSONStorableFloat("zoneSourceTargetZoneHeight", 0.1f, 0.005f, 0.2f);
@@ -298,14 +298,14 @@ namespace VaMLaunchPlugin.MotionSources
             plugin.RegisterStringChooser(_targetControllerChooser);
         }
 
-        private void InitOptionsUI(VaMLaunch plugin)
+        private void InitOptionsUI(LoVaM plugin)
         {
             _chooseAtomButton = plugin.CreateButton("Select Zone Target");
             _chooseAtomButton.button.onClick.AddListener(() =>
             {
                 SuperController.singleton.SelectModeAtom((atom) =>
                 {
-                    if (atom == null)
+                    if (!atom)
                     {
                         
                         return;
@@ -399,7 +399,7 @@ namespace VaMLaunchPlugin.MotionSources
             slider.label = "Current Target Position";
         }
 
-        private void DestroyOptionsUI(VaMLaunch plugin)
+        private void DestroyOptionsUI(LoVaM plugin)
         {
             plugin.RemoveButton(_chooseAtomButton);
             plugin.RemovePopup(_chooseAtomPopup);
@@ -422,15 +422,15 @@ namespace VaMLaunchPlugin.MotionSources
         {
             const string zoneAtomName = "LaunchZone";
             var zoneAtom = SuperController.singleton.GetAtomByUid(zoneAtomName);
-            if (zoneAtom == null)
+            if (!zoneAtom)
             {
                 yield return SuperController.singleton.AddAtomByType("Empty", zoneAtomName);
                 zoneAtom = SuperController.singleton.GetAtomByUid(zoneAtomName);
             }
 
-            if (zoneAtom == null) yield break;
+            if (!zoneAtom) yield break;
             var trigger = zoneAtom.GetComponent<CollisionTrigger>();
-            if (trigger != null)
+            if (trigger)
             {
                 Object.Destroy(trigger);
             }
@@ -482,13 +482,13 @@ namespace VaMLaunchPlugin.MotionSources
         
         private void UpdateZoneMatrices()
         {
-            if (_zoneFreeController == null)
+            if (!_zoneFreeController)
             {
                 return;
             }
 
-            Vector3 zonePosition = _zoneFreeController.transform.position;
-            Quaternion zoneRotation = _zoneFreeController.transform.rotation;
+            var zonePosition = _zoneFreeController.transform.position;
+            var zoneRotation = _zoneFreeController.transform.rotation;
             
             _zoneRenderMatrix = Matrix4x4.TRS(zonePosition, zoneRotation,
                 new Vector3(_targetZoneWidth.val, _targetZoneHeight.val, _targetZoneDepth.val) * ZoneMeshScalar);
@@ -498,51 +498,47 @@ namespace VaMLaunchPlugin.MotionSources
 
         private void RenderEditorGizmos()
         {
-            if (_zoneFreeController != null)
+            if (!_zoneFreeController) return;
+            
+            var zoneSelected = _zoneFreeController.selected && SuperController.singleton.editModeToggle.isOn;
+            var controllerSelected = _pluginFreeController && _pluginFreeController.selected &&
+                                     SuperController.singleton.editModeToggle.isOn;
+
+            var showZone = zoneSelected || controllerSelected;
+
+            var relTargetPos = _currentTargetPos.val / (99.0f * 2.0f);
+            if (showZone)
             {
-                bool zoneSelected = _zoneFreeController.selected && SuperController.singleton.editModeToggle.isOn;
-                bool controllerSelected = _pluginFreeController != null && _pluginFreeController.selected &&
-                                          SuperController.singleton.editModeToggle.isOn;
+                Graphics.DrawMesh(_zoneFreeController.holdPositionMesh, _zoneRenderMatrix, _zoneMaterial,
+                    _zoneFreeController.gameObject.layer, null, 0, null, false, false);
 
-                bool showZone = zoneSelected || controllerSelected;
-                
-                if (showZone)
-                {
-                    Graphics.DrawMesh(_zoneFreeController.holdPositionMesh, _zoneRenderMatrix, _zoneMaterial,
-                        _zoneFreeController.gameObject.layer, null, 0, null, false, false);
-
-                    float relTargetPos = _currentTargetPos.val / (99.0f * 2.0f);
-
-                    Vector3 targetPosBoxScale = new Vector3(0.2f,
-                        _targetZoneHeight.val * ZoneMeshScalar * relTargetPos * 2.0f, 0.2f);
+                var targetPosBoxScale = new Vector3(0.2f,
+                    _targetZoneHeight.val * ZoneMeshScalar * relTargetPos * 2.0f, 0.2f);
 
 
-                    Matrix4x4 targetPosMatrix = Matrix4x4.TRS(
-                        _zoneFreeController.transform.position +
-                        _zoneFreeController.transform.rotation * Vector3.right * (_targetZoneWidth.val + 0.01f) +
-                        _zoneFreeController.transform.rotation * Vector3.down * _targetZoneHeight.val +
-                        _zoneFreeController.transform.rotation * Vector3.up * (_targetZoneHeight.val * relTargetPos * 2.0f),
-                        _zoneFreeController.transform.rotation,
-                        targetPosBoxScale);
+                var targetPosMatrix = Matrix4x4.TRS(
+                    _zoneFreeController.transform.position +
+                    _zoneFreeController.transform.rotation * Vector3.right * (_targetZoneWidth.val + 0.01f) +
+                    _zoneFreeController.transform.rotation * Vector3.down * _targetZoneHeight.val +
+                    _zoneFreeController.transform.rotation * Vector3.up * (_targetZoneHeight.val * relTargetPos * 2.0f),
+                    _zoneFreeController.transform.rotation,
+                    targetPosBoxScale);
                     
-                    Graphics.DrawMesh(_zoneFreeController.holdPositionMesh, targetPosMatrix, _targetPosMaterial,
-                        _zoneFreeController.gameObject.layer, null, 0, null, false, false);
+                Graphics.DrawMesh(_zoneFreeController.holdPositionMesh, targetPosMatrix, _targetPosMaterial,
+                    _zoneFreeController.gameObject.layer, null, 0, null, false, false);
 
-                    if (_targetAtom != null && _targetController != null)
-                    {
-                        _lineDrawer0.SetLinePoints(_zoneFreeController.transform.position,
-                            _targetController.transform.position);
-                        _lineDrawer0.Draw();
-                    }
-                }
-
-                if (controllerSelected)
+                if (_targetAtom && _targetController)
                 {
-                    _lineDrawer1.SetLinePoints(_pluginFreeController.transform.position,
-                        _zoneFreeController.transform.position);
-                    _lineDrawer1.Draw();
+                    _lineDrawer0.SetLinePoints(_zoneFreeController.transform.position,
+                        _targetController.transform.position);
+                    _lineDrawer0.Draw();
                 }
             }
+
+            if (!controllerSelected) return;
+            _lineDrawer1.SetLinePoints(_pluginFreeController.transform.position,
+                _zoneFreeController.transform.position);
+            _lineDrawer1.Draw();
         }
         
         private float CalculateAverageSpeed()
@@ -575,9 +571,9 @@ namespace VaMLaunchPlugin.MotionSources
                 Mathf.InverseLerp(_lowerVelocityBarrier.val, _higherVelocityBarrier.val, averageVel)));
         }
         
-        private float RetrieveHighestSpeed(Queue<float> speeds)
+        private static float RetrieveHighestSpeed(Queue<float> speeds)
         {
-            float highestSpeed = 0.0f;
+            var highestSpeed = 0.0f;
             while (speeds.Count > 0)
             {
                 var spd = speeds.Dequeue();

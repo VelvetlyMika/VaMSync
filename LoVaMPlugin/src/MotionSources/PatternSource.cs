@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VaMLaunchPlugin.MotionSources
+namespace LoVaMPlugin.MotionSources
 {
     public class PatternSource : IMotionSource
     {
@@ -47,7 +47,7 @@ namespace VaMLaunchPlugin.MotionSources
 
         private int _samplePlaneIndex;
         
-        public void OnInit(VaMLaunch plugin)
+        public void OnInit(LoVaM plugin)
         {
             _pluginFreeController = plugin.containingAtom.GetStorableByID("control") as FreeControllerV3;
             
@@ -55,7 +55,7 @@ namespace VaMLaunchPlugin.MotionSources
             InitEditorGizmos();
         }
 
-        public void OnInitPluginSettings(VaMLaunch plugin)
+        public void OnInitPluginSettings(LoVaM plugin)
         {
             _minPosition = new JSONStorableFloat("patternSourceMinPosition", 10.0f, 0.0f, 99.0f);
             plugin.RegisterFloat(_minPosition);
@@ -122,7 +122,7 @@ namespace VaMLaunchPlugin.MotionSources
             return result;
         }
 
-        private void InitOptionsUI(VaMLaunch plugin)
+        private void InitOptionsUI(LoVaM plugin)
         {
             var slider = plugin.CreateSlider(_minPosition, true);
             slider.label = "Min Position";
@@ -162,7 +162,7 @@ namespace VaMLaunchPlugin.MotionSources
             
         }
 
-        private void DestroyOptionsUI(VaMLaunch plugin)
+        private void DestroyOptionsUI(LoVaM plugin)
         {
             plugin.RemoveSlider(_minPosition);
             plugin.RemoveSlider(_maxPosition);
@@ -180,7 +180,7 @@ namespace VaMLaunchPlugin.MotionSources
 
         public bool OnUpdate(ref byte outPos, ref byte outSpeed)
         {
-            if (_targetAnimationPattern == null)
+            if (!_targetAnimationPattern)
             {
                 if (!string.IsNullOrEmpty(_targetAnimationAtomChooser.val))
                 {
@@ -208,7 +208,7 @@ namespace VaMLaunchPlugin.MotionSources
             if (_includeMidPoints.val && _pluginFreeController.selected &&
                 SuperController.singleton.editModeToggle.isOn)
             {
-                for (int i = 0; i < _motionPoints.Count; i++)
+                for (var i = 0; i < _motionPoints.Count; i++)
                 {
                     if (i % 2 == 0)
                     {
@@ -226,41 +226,36 @@ namespace VaMLaunchPlugin.MotionSources
 
             int p0;
             int p1;
-            if (GetMotionPointIndices(_patternTime.val, _motionPoints, out p0, out p1))
-            {
-                if (p0 != _lastPointIndex)
-                {
-                    float yFactor = Mathf.InverseLerp(minPos, maxPos, GetPositionForPlane(_motionPoints[p1].Position));
-                    
-                    float timeToNextPoint;
-                    if (p1 > p0)
-                    {
-                        timeToNextPoint = _motionPoints[p1].Time - _patternTime.val;
-                    }
-                    else
-                    {
-                        timeToNextPoint = _targetAnimationPattern.GetTotalTime() - _patternTime.val +
-                                            _motionPoints[p1].Time;
-                    }
-
-                    timeToNextPoint /= Mathf.Max(_patternSpeed.val, 0.001f);
-
-                    var launchFactor = _invertPosition.val ? 1.0f - yFactor : yFactor;
-                    
-                    var launchPos = Mathf.Lerp(_minPosition.val, _maxPosition.val, launchFactor);
-                    var launchSpeed = LaunchUtils.PredictMoveSpeed(_lastLaunchPos, launchPos, timeToNextPoint);
-                    
-                    outPos = (byte) launchPos;
-                    outSpeed = (byte) launchSpeed;
-                    
-                    _lastPointIndex = p0;
-                    _lastLaunchPos = launchPos;
-
-                    return true;
-                }
-            }
+            if (!GetMotionPointIndices(_patternTime.val, _motionPoints, out p0, out p1)) return false;
+            if (p0 == _lastPointIndex) return false;
             
-            return false;
+            var yFactor = Mathf.InverseLerp(minPos, maxPos, GetPositionForPlane(_motionPoints[p1].Position));
+                    
+            float timeToNextPoint;
+            if (p1 > p0)
+            {
+                timeToNextPoint = _motionPoints[p1].Time - _patternTime.val;
+            }
+            else
+            {
+                timeToNextPoint = _targetAnimationPattern.GetTotalTime() - _patternTime.val +
+                                  _motionPoints[p1].Time;
+            }
+
+            timeToNextPoint /= Mathf.Max(_patternSpeed.val, 0.001f);
+
+            var launchFactor = _invertPosition.val ? 1.0f - yFactor : yFactor;
+                    
+            var launchPos = Mathf.Lerp(_minPosition.val, _maxPosition.val, launchFactor);
+            var launchSpeed = LaunchUtils.PredictMoveSpeed(_lastLaunchPos, launchPos, timeToNextPoint);
+                    
+            outPos = (byte) launchPos;
+            outSpeed = (byte) launchSpeed;
+                    
+            _lastPointIndex = p0;
+            _lastLaunchPos = launchPos;
+
+            return true;
         }
 
         private float GetMaxPosition(float currentMax, Vector3 pos)
@@ -364,7 +359,7 @@ namespace VaMLaunchPlugin.MotionSources
             
         }
 
-        public void OnDestroy(VaMLaunch plugin)
+        public void OnDestroy(LoVaM plugin)
         {
             DestroyOptionsUI(plugin);
         }

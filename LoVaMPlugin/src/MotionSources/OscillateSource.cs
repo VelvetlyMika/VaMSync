@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VaMLaunchPlugin.MotionSources
+namespace LoVaMPlugin.MotionSources
 {
     public class OscillateSource : IMotionSource
     {
@@ -26,7 +26,7 @@ namespace VaMLaunchPlugin.MotionSources
         
         private LineDrawer _lineDrawer0;
         
-        public void OnInit(VaMLaunch plugin)
+        public void OnInit(LoVaM plugin)
         {
             _pluginFreeController = plugin.containingAtom.GetStorableByID("control") as FreeControllerV3;
             
@@ -37,7 +37,7 @@ namespace VaMLaunchPlugin.MotionSources
             _dirChangeTimer = 0.0f;
         }
 
-        public void OnInitPluginSettings(VaMLaunch plugin)
+        public void OnInitPluginSettings(LoVaM plugin)
         {
             _minPosition = new JSONStorableFloat("oscSourceMinPosition", 10.0f, 0.0f, 99.0f);
             plugin.RegisterFloat(_minPosition);
@@ -83,7 +83,7 @@ namespace VaMLaunchPlugin.MotionSources
             return result;
         }
 
-        private void InitOptionsUI(VaMLaunch plugin)
+        private void InitOptionsUI(LoVaM plugin)
         {
             var slider = plugin.CreateSlider(_minPosition, true);
             slider.label = "Min Position";
@@ -120,7 +120,7 @@ namespace VaMLaunchPlugin.MotionSources
             });
         }
 
-        private void DestroyOptionsUI(VaMLaunch plugin)
+        private void DestroyOptionsUI(LoVaM plugin)
         {
             plugin.RemoveSlider(_minPosition);
             plugin.RemoveSlider(_maxPosition);
@@ -153,7 +153,7 @@ namespace VaMLaunchPlugin.MotionSources
         
         public void OnSimulatorUpdate(float prevPos, float newPos, float deltaTime)
         {
-            if (_targetAnimationPattern == null)
+            if (!_targetAnimationPattern)
             {
                 if (!string.IsNullOrEmpty(_targetAnimationAtomChooser.val))
                 {
@@ -191,7 +191,7 @@ namespace VaMLaunchPlugin.MotionSources
             
         }
 
-        public void OnDestroy(VaMLaunch plugin)
+        public void OnDestroy(LoVaM plugin)
         {
             DestroyOptionsUI(plugin);
         }

@@ -1,20 +1,19 @@
-using System;
 using System.Collections.Generic;
+using LoVaMPlugin.MotionSources;
+using LoVaMPlugin.Network;
 using UnityEngine;
-using VaMLaunchPlugin.MotionSources;
 
-namespace VaMLaunchPlugin
+namespace LoVaMPlugin
 {
-    public class VaMLaunch : MVRScript
+    public class LoVaM : MVRScript
     {
-        private static VaMLaunch _instance;
+        private static LoVaM _instance;
         
         private const string ServerIP = "127.0.0.1";
         private const int ServerListenPort = 15600;
-        private const int ServerSendPort = 15601;
         private const float NetworkListenInterval = 0.033f;
         
-        private VaMLaunchNetwork _network;
+        private INetwork _network;
         private float _networkPollTimer;
 
         private byte _lastSentLaunchPos;
@@ -29,7 +28,7 @@ namespace VaMLaunchPlugin
         private IMotionSource _currentMotionSource;
         private int _currentMotionSourceIndex = -1;
         private int _desiredMotionSourceIndex;
-
+        
         private readonly List<string> _motionSourceChoices = new List<string>
         {
             "Oscillate",
@@ -68,9 +67,11 @@ namespace VaMLaunchPlugin
 
         private void InitNetwork()
         {
-            _network = new VaMLaunchNetwork();
-            _network.Init(ServerIP, ServerListenPort, ServerSendPort);
-            SuperController.LogMessage("VAM Launch network connection established.");
+            StopNetwork();
+
+            _network = new LoVaMNetwork();
+            _network.Init(ServerIP, ServerListenPort);
+            SuperController.LogMessage("LoVaM connection to Lovense remote established.");
         }
         
         private void InitPluginSettings()
@@ -146,41 +147,46 @@ namespace VaMLaunchPlugin
         
         private void UpdateMotionSource()
         {
-            if (_desiredMotionSourceIndex != _currentMotionSourceIndex)
+            SetMotionSource();
+            
+            if (_currentMotionSource == null)
             {
-                if (_currentMotionSource != null)
-                {
-                    _currentMotionSource.OnDestroy(this);
-                    _currentMotionSource = null;
-                }
-
-                if (_desiredMotionSourceIndex >= 0)
-                {
-                    _currentMotionSource = _motionSources[_desiredMotionSourceIndex];
-                    _currentMotionSource.OnInit(this);
-                }
-
-                _currentMotionSourceIndex = _desiredMotionSourceIndex;
+                return;
             }
+            
+            byte pos = 0;
+            byte speed = 0;
+            if (_currentMotionSource.OnUpdate(ref pos, ref speed))
+            {
+                SendLaunchPosition(pos, speed);
+            }
+        }
 
+        private void SetMotionSource()
+        {
+            if (_desiredMotionSourceIndex == _currentMotionSourceIndex)
+            {
+                return;
+            }
+            
             if (_currentMotionSource != null)
             {
-                byte pos = 0;
-                byte speed = 0;
-                if (_currentMotionSource.OnUpdate(ref pos, ref speed))
-                {
-                    SendLaunchPosition(pos, speed);
-                }
+                _currentMotionSource.OnDestroy(this);
+                _currentMotionSource = null;
             }
+
+            if (_desiredMotionSourceIndex >= 0)
+            {
+                _currentMotionSource = _motionSources[_desiredMotionSourceIndex];
+                _currentMotionSource.OnInit(this);
+            }
+
+            _currentMotionSourceIndex = _desiredMotionSourceIndex;
         }
         
         private void OnDestroy()
         {
-            if (_network != null)
-            {
-                SuperController.LogMessage("Shutting down VAM Launch network.");
-                _network.Stop();
-            }
+            StopNetwork();
 
             if (_instance == this)
             {
@@ -188,10 +194,18 @@ namespace VaMLaunchPlugin
             }
         }
 
+        private void StopNetwork()
+        {
+            if (_network != null)
+            {
+                SuperController.LogMessage("Shutting down VAM Launch network.");
+                _network.Stop();
+            }
+        }
+
         private void Update()
         {
             UpdateMotionSource();
-            
             UpdateNetwork();
             UpdateSimulator();
         }
@@ -205,10 +219,7 @@ namespace VaMLaunchPlugin
             
             _simulatorPosition.SetVal(newPos);
 
-            if (_currentMotionSource != null)
-            {
-                _currentMotionSource.OnSimulatorUpdate(prevPos, newPos, Time.deltaTime);
-            }
+            _currentMotionSource?.OnSimulatorUpdate(prevPos, newPos, Time.deltaTime);
         }
 
         private void SetSimulatorTarget(float pos, float speed)
@@ -226,53 +237,26 @@ namespace VaMLaunchPlugin
             }
 
             _networkPollTimer -= Time.deltaTime;
-            if (_networkPollTimer <= 0.0f)
-            {
-                ReceiveNetworkMessages();
-                _networkPollTimer = NetworkListenInterval - Mathf.Min(-_networkPollTimer, NetworkListenInterval);
-            }
+            if (!(_networkPollTimer <= 0.0f)) return;
+            _networkPollTimer = NetworkListenInterval - Mathf.Min(-_networkPollTimer, NetworkListenInterval);
         }
 
-        private void ReceiveNetworkMessages()
-        {
-            byte[] msg = _network.GetNextMessage();
-            if (msg != null && msg.Length > 0)
-            {
-                //SuperController.LogMessage(msg[0].ToString());
-            }
-        }
-
-        
-        private static readonly byte[] LaunchData = new byte[6];
         private void SendLaunchPosition(byte pos, byte speed)
         {
             SetSimulatorTarget(pos, speed);
             
-            if (_network == null)
+            if (_network == null || _pauseLaunchMessages.val)
             {
                 return;
             }
 
-            if (!_pauseLaunchMessages.val)
-            {
-                LaunchData[0] = pos;
-                LaunchData[1] = speed;
-
-                float dist = Mathf.Abs(pos - _lastSentLaunchPos);
-                float duration = LaunchUtils.PredictMoveDuration(dist, speed);
-                    
-                var durationData = BitConverter.GetBytes(duration);
-                LaunchData[2] = durationData[0];
-                LaunchData[3] = durationData[1];
-                LaunchData[4] = durationData[2];
-                LaunchData[5] = durationData[3];
+            float dist = Mathf.Abs(pos - _lastSentLaunchPos);
+            var duration = LaunchUtils.PredictMoveDuration(dist, speed);
                 
-                //SuperController.LogMessage(string.Format("Sending: P:{0}, S:{1}, D:{2}", pos, speed, duration));
+            //SuperController.LogMessage(string.Format("Sending: P:{0}, S:{1}, D:{2}", pos, speed, duration));
                 
-                _network.Send(LaunchData, LaunchData.Length);
-
-                _lastSentLaunchPos = pos;
-            }
+            _network.Send("LaunchData");
+            _lastSentLaunchPos = pos;
         }
     }
 }

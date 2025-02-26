@@ -7,8 +7,8 @@
     <ProjectGuid>{9CB01EB1-928B-44A8-900C-5314E6489162}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VAMLaunchPlugin</RootNamespace>
-    <AssemblyName>VAMLaunchPlugin</AssemblyName>
+    <RootNamespace>LoVaMPlugin</RootNamespace>
+    <AssemblyName>LoVaMPlugin</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -96,8 +96,9 @@
     <Compile Include="src\MotionSources\OscillateSource.cs" />
     <Compile Include="src\MotionSources\PatternSource.cs" />
     <Compile Include="src\MotionSources\ZoneSource.cs" />
-    <Compile Include="src\VAMLaunch.cs" />
-    <Compile Include="src\VaMLaunchNetwork.cs" />
+    <Compile Include="src\Network\INetwork.cs" />
+    <Compile Include="src\Network\LoVAMNetwork.cs" />
+    <Compile Include="src\LoVaM.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ADD_ME.cslist" />
