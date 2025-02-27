@@ -2,8 +2,9 @@
 {
     public interface INetwork
     {
-        bool Init(string ip, int sendPort);
-        void Send<T>(T payload);
+        bool Init(string ip, int port);
+        void Send(string payload);
+        string ReadResponse(string payload);
         void Stop();
     }
 }

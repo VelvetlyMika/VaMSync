@@ -72,7 +72,7 @@ namespace LoVaMPlugin
             _network = new LoVaMNetwork();
             _network.Init(ServerIP, ServerListenPort);
             SuperController.LogMessage("LoVaM connection to Lovense remote established.");
-            _network.Send("");
+            _network.Send("{ \"command\": \"GetToys\" }");
         }
         
         private void InitPluginSettings()
