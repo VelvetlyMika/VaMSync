@@ -80,7 +80,7 @@ namespace LoVaMPlugin.MotionSources
 
         private bool ProcessTarget(ref byte outPos, ref byte outSpeed)
         {
-            bool shouldMoveLaunch = false;
+            var shouldMoveLaunch = false;
             
             if (!_targetAtom || !_targetController)
             {
@@ -566,9 +566,17 @@ namespace LoVaMPlugin.MotionSources
             // To calculate this threshold we take the average speed and use it to blend between two min,max threshold
             // values, if the average speed is higher we want the threshold to be shorter, and if slower we want the threshold
             // to be longer to give the best chance of choosing a good velocity.
-            _currentLaunchSignalTimeThreshold.SetVal(Mathf.Lerp(_maxLaunchSignalTimeThreshold.val,
-                _minLaunchSignalTimeThreshold.val,
-                Mathf.InverseLerp(_lowerVelocityBarrier.val, _higherVelocityBarrier.val, averageVel)));
+            _currentLaunchSignalTimeThreshold.SetVal(
+                Mathf.Lerp(
+                    _maxLaunchSignalTimeThreshold.val,
+                    _minLaunchSignalTimeThreshold.val,
+                    Mathf.InverseLerp(
+                        _lowerVelocityBarrier.val,
+                        _higherVelocityBarrier.val,
+                        averageVel
+                    )
+                )
+            );
         }
         
         private static float RetrieveHighestSpeed(Queue<float> speeds)

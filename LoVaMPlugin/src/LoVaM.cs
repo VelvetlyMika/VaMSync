@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using LoVaMPlugin.MotionSources;
 using LoVaMPlugin.Network;
+using LoVaMPlugin.Toys;
 using UnityEngine;
 
 namespace LoVaMPlugin
@@ -11,10 +13,8 @@ namespace LoVaMPlugin
         
         private const string ServerIP = "192.168.178.73";
         private const int ServerListenPort = 20010;
-        private const float NetworkListenInterval = 0.033f;
         
         private INetwork _network;
-        private float _networkPollTimer;
 
         private byte _lastSentLaunchPos;
 
@@ -28,6 +28,11 @@ namespace LoVaMPlugin
         private IMotionSource _currentMotionSource;
         private int _currentMotionSourceIndex = -1;
         private int _desiredMotionSourceIndex;
+
+        private const double SendPeriod = 0.25;
+        private double _timeLastSend = Time.time;
+        
+        private IToy _toy;
         
         private readonly List<string> _motionSourceChoices = new List<string>
         {
@@ -63,6 +68,7 @@ namespace LoVaMPlugin
             InitOptionsUI();
             InitStorableActions();
             InitNetwork();
+            InitToy();
         }
 
         private void InitNetwork()
@@ -72,7 +78,11 @@ namespace LoVaMPlugin
             _network = new LoVaMNetwork();
             _network.Init(ServerIP, ServerListenPort);
             SuperController.LogMessage("LoVaM connection to Lovense remote established.");
-            _network.Send("{ \"command\": \"GetToys\" }");
+        }
+
+        private void InitToy()
+        {
+            _toy = new SolaceTwo();
         }
         
         private void InitPluginSettings()
@@ -205,7 +215,6 @@ namespace LoVaMPlugin
         private void Update()
         {
             UpdateMotionSource();
-            UpdateNetwork();
             UpdateSimulator();
         }
 
@@ -227,19 +236,6 @@ namespace LoVaMPlugin
             _simulatorSpeed = Mathf.Clamp(speed, 0.0f, LaunchUtils.LAUNCH_MAX_VAL);
         }
         
-        // Not really used yet, but there just in case we want to do two-way communication between server
-        private void UpdateNetwork()
-        {
-            if (_network == null)
-            {
-                return;
-            }
-
-            _networkPollTimer -= Time.deltaTime;
-            if (!(_networkPollTimer <= 0.0f)) return;
-            _networkPollTimer = NetworkListenInterval - Mathf.Min(-_networkPollTimer, NetworkListenInterval);
-        }
-
         private void SendLaunchPosition(byte pos, byte speed)
         {
             SetSimulatorTarget(pos, speed);
@@ -249,12 +245,19 @@ namespace LoVaMPlugin
                 return;
             }
 
+            var now = Time.time;
             float dist = Mathf.Abs(pos - _lastSentLaunchPos);
             var duration = LaunchUtils.PredictMoveDuration(dist, speed);
-                
-            //SuperController.LogMessage(string.Format("Sending: P:{0}, S:{1}, D:{2}", pos, speed, duration));
-                
-            _network.Send("LaunchData");
+
+            //SuperController.LogMessage($"Time: LS:{_timeLastSend}, N:{now}");
+            if (_timeLastSend < now)
+            {
+                var sendPos = Math.Abs(pos - duration * speed);
+                SuperController.LogMessage($"Sending: P:{pos}, S:{speed}, Di:{dist}, Du:{duration}, Sp:{sendPos}");
+                _network.Send(_toy.GetCommand((byte)sendPos));
+                _timeLastSend = now + SendPeriod;
+            }
+
             _lastSentLaunchPos = pos;
         }
     }

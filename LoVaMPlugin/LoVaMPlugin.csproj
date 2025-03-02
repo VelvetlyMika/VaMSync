@@ -92,6 +92,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="src\LaunchUtils.cs" />
+    <Compile Include="src\main.cs" />
     <Compile Include="src\MotionSources\IMotionSource.cs" />
     <Compile Include="src\MotionSources\OscillateSource.cs" />
     <Compile Include="src\MotionSources\PatternSource.cs" />
@@ -99,6 +100,13 @@
     <Compile Include="src\Network\INetwork.cs" />
     <Compile Include="src\Network\LoVaMNetwork.cs" />
     <Compile Include="src\LoVaM.cs" />
+    <Compile Include="src\Toys\BaseToy.cs" />
+    <Compile Include="src\Toys\Diamo.cs" />
+    <Compile Include="src\Toys\Gush.cs" />
+    <Compile Include="src\Toys\IToy.cs" />
+    <Compile Include="src\Toys\MaxTwo.cs" />
+    <Compile Include="src\Toys\SolaceTwo.cs" />
+    <Compile Include="src\Toys\ToyMap.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ADD_ME.cslist" />

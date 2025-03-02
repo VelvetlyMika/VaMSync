@@ -6,3 +6,10 @@ src/MotionSources/IMotionSource.cs
 src/MotionSources/ZoneSource.cs
 src/MotionSources/OscillateSource.cs
 src/MotionSources/PatternSource.cs
+src/Toys/Diamo.cs
+src/Toys/Gush.cs
+src/Toys/BaseToy.cs
+src/Toys/IToy.cs
+src/Toys/MaxTwo.cs
+src/Toys/SolaceTwo.cs
+src/Toys/ToyMap.cs
