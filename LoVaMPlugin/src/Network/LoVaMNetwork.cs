@@ -27,10 +27,15 @@ namespace LoVaMPlugin.Network
                        "Content-Length: {0}\r\n" +
                        "Connection: keep-alive\r\n\r\n" +
                        "{1}";
+            
+            return Connect();
+        }
 
+        private bool Connect()
+        {
             try
             {
-                _tcpClient = new TcpClient(ip, port);
+                _tcpClient = new TcpClient(_ip, _port);
                 SuperController.LogMessage("LoVaM connection to Lovense remote established.");
                 return true;
             }
@@ -120,7 +125,7 @@ namespace LoVaMPlugin.Network
         public void Reconnect()
         {
             Stop();
-            Init(_ip, _port);
+            Connect();
         }
     }
 }
