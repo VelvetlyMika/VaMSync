@@ -45,6 +45,26 @@ namespace LoVaMPlugin.Network
                 return false;
             }
         }
+        
+        public void Disconnect()
+        {
+            try
+            {
+                _tcpClient?.Close();
+                _tcpClient = null;
+                SuperController.LogMessage("Connection to Lovense remote closed");
+            }
+            catch (Exception ex)
+            {
+                SuperController.LogError($"{ex.GetType()}: {ex.Message}");
+            }
+        }
+
+        public void Reconnect()
+        {
+            Disconnect();
+            Connect();
+        }
 
         public void Send(string payload)
         {
@@ -106,26 +126,6 @@ namespace LoVaMPlugin.Network
             stream.Write(requestBytes, 0, requestBytes.Length);
             stream.Flush();
             //SuperController.LogMessage($"\r\nSent request:\r\n\r\n{request}\r\n");
-        }
-
-        public void Stop()
-        {
-            try
-            {
-                _tcpClient?.Close();
-                _tcpClient = null;
-                SuperController.LogMessage("Connection to Lovense remote closed");
-            }
-            catch (Exception ex)
-            {
-                SuperController.LogError($"{ex.GetType()}: {ex.Message}");
-            }
-        }
-
-        public void Reconnect()
-        {
-            Stop();
-            Connect();
         }
     }
 }

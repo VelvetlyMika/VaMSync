@@ -223,7 +223,7 @@ namespace LoVaMPlugin
 
         private void StopNetwork()
         {
-            _network?.Stop();
+            _network?.Disconnect();
         }
 
         private void Update()
@@ -275,7 +275,7 @@ namespace LoVaMPlugin
                 catch (Exception e)
                 {
                     _pauseLaunchMessages.SetVal(true);
-                    _network?.Stop();
+                    _network?.Disconnect();
                 }
                 
                 _timeLastSend = now + SendPeriod;

@@ -5,7 +5,7 @@
         bool Init(string ip, int port);
         void Send(string payload);
         string ReadResponse(string payload);
-        void Stop();
+        void Disconnect();
         void Reconnect();
     }
 }
