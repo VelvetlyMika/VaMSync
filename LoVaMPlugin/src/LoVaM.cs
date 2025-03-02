@@ -275,6 +275,7 @@ namespace LoVaMPlugin
                 catch (Exception e)
                 {
                     _pauseLaunchMessages.SetVal(true);
+                    _network?.Stop();
                 }
                 
                 _timeLastSend = now + SendPeriod;

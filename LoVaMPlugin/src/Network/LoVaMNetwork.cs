@@ -57,7 +57,7 @@ namespace LoVaMPlugin.Network
             catch (Exception ex)
             {
                 SuperController.LogError($"{ex.GetType()}: {ex.Message}");
-                Stop();
+                throw new Exception("Error sending data to Lovense remote");
             }
         }
 
@@ -88,7 +88,7 @@ namespace LoVaMPlugin.Network
             catch (Exception ex)
             {
                 SuperController.LogError($"{ex.GetType()}: {ex.Message}");
-                Stop();
+                throw new Exception("Error reading data from Lovense remote");
             }
 
             return null;
