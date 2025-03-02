@@ -268,7 +268,15 @@ namespace LoVaMPlugin
             {
                 var sendPos = Math.Abs(pos - duration * speed);
                 SuperController.LogMessage($"Sending: P:{pos}, S:{speed}, Di:{dist}, Du:{duration}, Sp:{sendPos}");
-                _network.Send(_toy.GetCommand((byte)sendPos));
+                try
+                {
+                    _network.Send(_toy.GetCommand((byte)sendPos));
+                }
+                catch (Exception e)
+                {
+                    _pauseLaunchMessages.SetVal(true);
+                }
+                
                 _timeLastSend = now + SendPeriod;
             }
 

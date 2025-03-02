@@ -43,6 +43,11 @@ namespace LoVaMPlugin.Network
 
         public void Send(string payload)
         {
+            if (_tcpClient == null)
+            {
+                throw new Exception("LoVaM connection not initialized");
+            }
+            
             try
             {
                 var stream = _tcpClient.GetStream();
@@ -58,6 +63,11 @@ namespace LoVaMPlugin.Network
 
         public string ReadResponse(string payload)
         {
+            if (_tcpClient == null)
+            {
+                throw new Exception("LoVaM connection not initialized");
+            }
+            
             try
             {
                 var stream = _tcpClient.GetStream();
@@ -97,7 +107,8 @@ namespace LoVaMPlugin.Network
         {
             try
             {
-                _tcpClient.Close();
+                _tcpClient?.Close();
+                _tcpClient = null;
                 SuperController.LogMessage("Connection to Lovense remote closed");
             }
             catch (Exception ex)
@@ -109,7 +120,6 @@ namespace LoVaMPlugin.Network
         public void Reconnect()
         {
             Stop();
-            _tcpClient = null;
             Init(_ip, _port);
         }
     }
