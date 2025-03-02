@@ -77,7 +77,6 @@ namespace LoVaMPlugin
 
             _network = new LoVaMNetwork();
             _network.Init(ServerIP, ServerListenPort);
-            SuperController.LogMessage("LoVaM connection to Lovense remote established.");
         }
 
         private void InitToy()
@@ -121,6 +120,12 @@ namespace LoVaMPlugin
         {
             var toggle = CreateToggle(_pauseLaunchMessages);
             toggle.label = "Pause Launch";
+
+            var reconnectButton = CreateButton("Reconnect");
+            reconnectButton.button.onClick.AddListener(() =>
+            {
+                _network.Reconnect();
+            });
             
             var slider = CreateSlider(_simulatorPosition);
             slider.label = "Simulator";
@@ -128,6 +133,11 @@ namespace LoVaMPlugin
             CreateScrollablePopup(_motionSourceChooser);
 
             CreateSpacer();
+        }
+
+        private void ReconnectNetwork()
+        {
+            
         }
 
         private void InitStorableActions()
@@ -149,6 +159,12 @@ namespace LoVaMPlugin
                 _pauseLaunchMessages.SetVal(!_pauseLaunchMessages.val);
             });
             RegisterAction(toggleLaunchAction);
+            
+            JSONStorableAction reconnectNetworkAction = new JSONStorableAction("reconnectNetwork", () =>
+            {
+                _network.Reconnect();
+            });
+            RegisterAction(reconnectNetworkAction);
         }
 
         private int GetMotionSourceIndex(string srcName)
@@ -207,9 +223,7 @@ namespace LoVaMPlugin
 
         private void StopNetwork()
         {
-            if (_network == null) return;
-            SuperController.LogMessage("Shutting down VAM Launch network.");
-            _network.Stop();
+            _network?.Stop();
         }
 
         private void Update()

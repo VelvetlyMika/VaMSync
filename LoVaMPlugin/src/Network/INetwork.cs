@@ -6,5 +6,6 @@
         void Send(string payload);
         string ReadResponse(string payload);
         void Stop();
+        void Reconnect();
     }
 }

@@ -6,14 +6,18 @@ namespace LoVaMPlugin.Network
 {
     public class LoVaMNetwork : INetwork
     {
+        private string _ip;
+        private int _port;
+        
         private TcpClient _tcpClient;
         private string _request;
 
         public bool Init(string ip, int port)
         {
             if (_tcpClient != null) return true;
-
-            _tcpClient = new TcpClient(ip, port);
+            
+            _ip = ip;
+            _port = port;
             _request = "POST /command HTTP/1.1\r\n" +
                        $"Host: {ip}:{port}\r\n" +
                        "User/Agent: App\r\n" +
@@ -23,8 +27,18 @@ namespace LoVaMPlugin.Network
                        "Content-Length: {0}\r\n" +
                        "Connection: keep-alive\r\n\r\n" +
                        "{1}";
-            
-            return true;
+
+            try
+            {
+                _tcpClient = new TcpClient(ip, port);
+                SuperController.LogMessage("LoVaM connection to Lovense remote established.");
+                return true;
+            }
+            catch (Exception e)
+            {
+                SuperController.LogMessage($"LoVaM connection to Lovense remote failed: {e.Message}");
+                return false;
+            }
         }
 
         public void Send(string payload)
@@ -37,7 +51,8 @@ namespace LoVaMPlugin.Network
             }
             catch (Exception ex)
             {
-                SuperController.LogError(ex.Message);
+                SuperController.LogError($"{ex.GetType()}: {ex.Message}");
+                Stop();
             }
         }
 
@@ -62,7 +77,8 @@ namespace LoVaMPlugin.Network
             }
             catch (Exception ex)
             {
-                SuperController.LogError(ex.Message);
+                SuperController.LogError($"{ex.GetType()}: {ex.Message}");
+                Stop();
             }
 
             return null;
@@ -79,7 +95,22 @@ namespace LoVaMPlugin.Network
 
         public void Stop()
         {
-            return;
+            try
+            {
+                _tcpClient.Close();
+                SuperController.LogMessage("Connection to Lovense remote closed");
+            }
+            catch (Exception ex)
+            {
+                SuperController.LogError($"{ex.GetType()}: {ex.Message}");
+            }
+        }
+
+        public void Reconnect()
+        {
+            Stop();
+            _tcpClient = null;
+            Init(_ip, _port);
         }
     }
 }
